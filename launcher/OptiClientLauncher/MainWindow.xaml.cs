@@ -116,6 +116,7 @@ public partial class MainWindow : Window
                 StatusText.Text = m;
             }));
             Save();
+            _busy = false; // 바쁜 상태면 종료할 때 "설치 중입니다" 창이 떠서 막힌다
             Application.Current.Shutdown();
         }
         catch (Exception ex)
