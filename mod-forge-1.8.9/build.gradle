@@ -1,0 +1,86 @@
+plugins {
+    id 'java'
+    id 'gg.essential.loom' version '0.10.0.+'
+    id 'dev.architectury.architectury-pack200' version '0.1.3'
+}
+
+version = project.mod_version
+group = 'dev.opticlient'
+
+base {
+    archivesName = 'opticlient-hud-1.8.9-forge'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
+}
+
+loom {
+    // 개발용 자동 테스트: ./gradlew runAutotest  (스크린샷은 run-autotest/screenshots)
+    runs {
+        autotest {
+            client()
+            name = 'OptiClient AutoTest'
+            vmArg '-Dopticlient.autotest=true'
+            programArgs '--width', '1920', '--height', '1080'
+            runDir 'run-autotest'
+        }
+    }
+    forge {
+        pack200Provider = new dev.architectury.pack200.java.Pack200Adapter()
+    }
+}
+
+// 버전 공통 HUD 코드
+sourceSets.main.java.srcDir '../common/src/main/java'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.8.9'
+    mappings 'de.oceanlabs.mcp:mcp_stable:22-1.8.9'
+    forge 'net.minecraftforge:forge:1.8.9-11.15.1.2318-1.8.9'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('mcmod.info') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// essential-loom 0.10 의 RemapJarTask 는 Jar 를 상속한다.
+// 최신 Gradle 에서는 remap(doTask) 뒤에 Jar 의 기본 copy 동작이 실행돼 결과 jar 를 빈 파일로 덮어쓰므로 copy 동작을 뺀다.
+jar {
+    archiveClassifier = 'dev'
+    if (!project.hasProperty('withAutotest')) exclude 'dev/opticlient/forge/DevAutoTest*' // -PwithAutotest: 측정용
+}
+remapJar {
+    input = jar.archiveFile
+    archiveClassifier = ''
+    actions.removeIf { it.displayName == 'Execute copy' }
+}
+
+// essential-loom 0.10 의 RunGameTask 는 최신 Gradle 검증에 걸려 실행되지 않으므로,
+// 같은 설정으로 일반 JavaExec 작업을 만들어 자동 테스트를 실행한다:  ./gradlew autotestClient
+tasks.register('autotestClient', JavaExec) {
+    def src = tasks.named('runAutotest').get()
+    dependsOn src.dependsOn
+    classpath = src.classpath
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(8) }
+    doFirst {
+        def cfg = net.fabricmc.loom.configuration.ide.RunConfig.runConfig(project, loom.runConfigs.getByName('autotest'))
+        mainClass = cfg.mainClass
+        jvmArgs = cfg.vmArgs
+        args = cfg.programArgs
+        environment cfg.envVariables
+        workingDir = file(cfg.runDir)
+        workingDir.mkdirs()
+    }
+}

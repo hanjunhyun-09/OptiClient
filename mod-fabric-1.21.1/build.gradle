@@ -1,0 +1,67 @@
+plugins {
+    id 'fabric-loom' version '1.11.8'
+}
+
+version = project.mod_version
+group = 'dev.opticlient'
+
+base {
+    archivesName = "opticlient-hud-${project.minecraft_version}"
+}
+
+// 버전 공통 HUD 코드
+sourceSets.main.java.srcDir '../common/src/main/java'
+
+repositories {
+    // 성능 측정용 (개발 실행에서만 쓰고 배포 jar 에는 포함되지 않음)
+    exclusiveContent {
+        forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // 실제 설치 환경처럼 최적화 모드를 넣고 FPS 를 잰다 (runAutotest 전용)
+    modLocalRuntime 'maven.modrinth:sodium:mc1.21.1-0.6.13-fabric'
+    modLocalRuntime 'maven.modrinth:lithium:mc1.21.1-0.15.4-fabric'
+    modLocalRuntime 'maven.modrinth:ferrite-core:7.0.3-fabric'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = project.java_version as Integer
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+// 개발용 자동 테스트: ./gradlew runAutotest  (스크린샷은 run-autotest/screenshots)
+loom {
+    runs {
+        autotest {
+            client()
+            name = 'OptiClient AutoTest'
+            vmArg '-Dopticlient.autotest=true'
+            programArgs '--width', '1920', '--height', '1080'
+            runDir 'run-autotest'
+        }
+    }
+}
+
+jar {
+    // 배포 jar 에서는 자동 테스트 코드를 뺀다 (-PwithAutotest 로 빌드하면 포함: 실제 설치 환경 측정용)
+    if (!project.hasProperty('withAutotest')) exclude 'dev/opticlient/fabric/DevAutoTest*'
+}

@@ -1,0 +1,8 @@
+{
+  "category.opticlient": "OptiClient",
+  "key.opticlient.menu": "HUD 설정 열기",
+  "key.opticlient.zoom": "줌 (누르고 있기)",
+  "key.opticlient.sprint": "달리기 토글",
+  "key.opticlient.freelook": "퍼스펙티브 (자유 시점)",
+  "key.opticlient.sneak": "웅크리기 토글"
+}

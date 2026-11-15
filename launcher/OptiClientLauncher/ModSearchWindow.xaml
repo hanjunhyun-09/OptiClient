@@ -1,0 +1,131 @@
+<Window x:Class="OptiClientLauncher.ModSearchWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:OptiClientLauncher"
+        Title="Modrinth 모드 검색" Icon="/Assets/opticlient.ico" Width="880" Height="720" MinWidth="680" MinHeight="520"
+        Background="#0E0F14" FontFamily="Malgun Gothic, Segoe UI" FontSize="13"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <local:IconConverter x:Key="Icon"/>
+        <BooleanToVisibilityConverter x:Key="BoolVis"/>
+
+        <!-- 카테고리 칩 -->
+        <Style x:Key="Chip" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="b" CornerRadius="13" Background="#1F2128" Padding="13,5" BorderBrush="#2E323C" BorderThickness="1">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource AccentGradient}"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Left" Text="🔍" FontSize="16" VerticalAlignment="Center" Margin="2,0,10,0"/>
+            <TextBox x:Name="QueryBox" FontSize="14" TextChanged="QueryBox_TextChanged" KeyDown="QueryBox_KeyDown"/>
+        </DockPanel>
+
+        <WrapPanel x:Name="CategoryChips" Grid.Row="1" Margin="0,12,0,0"/>
+
+        <TextBlock x:Name="InfoText" Grid.Row="2" Style="{StaticResource Muted}" Margin="2,4,0,8"/>
+
+        <Border Grid.Row="3" Background="{StaticResource Panel}" CornerRadius="14" Padding="6" BorderBrush="#1FFFFFFF" BorderThickness="1">
+            <ListBox x:Name="Results" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:ModrinthHit}">
+                        <Grid Margin="2,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- 아이콘 (없으면 첫 글자) -->
+                            <Border Width="52" Height="52" CornerRadius="12" Background="#2A1A1D" Margin="0,0,14,0" ClipToBounds="True">
+                                <Grid>
+                                    <TextBlock Text="{Binding Initial}" FontSize="22" FontWeight="Bold" Foreground="{StaticResource Accent}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Border CornerRadius="12">
+                                        <Border.Background>
+                                            <ImageBrush ImageSource="{Binding IconUrl, Converter={StaticResource Icon}}" Stretch="UniformToFill"/>
+                                        </Border.Background>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding Author, StringFormat=by {0}}" Style="{StaticResource Muted}" VerticalAlignment="Bottom" Margin="8,0,0,1"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding Description}" Foreground="#B9BDC9" TextWrapping="Wrap" MaxHeight="36" Margin="0,3,0,3"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding DownloadsLabel, StringFormat=⬇ {0}}" Style="{StaticResource Muted}"/>
+                                    <TextBlock Text="·" Style="{StaticResource Muted}" Margin="8,0"/>
+                                    <TextBlock Text="{Binding Categories}" Style="{StaticResource Muted}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="2" Content="{Binding PickLabel}" Width="92" Margin="12,0,4,0" VerticalAlignment="Center"
+                                    Click="Pick_Click" Tag="{Binding}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Picked}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource AccentGradient}"/>
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding AlreadyInProfile}" Value="True">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- 담은 모드 -->
+        <Border Grid.Row="4" Margin="0,12,0,0" CornerRadius="14" Padding="14,10" Background="#CC1C1E25" BorderBrush="#33E5383B" BorderThickness="1">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="MoreButton" Content="더 보기" Click="More_Click"/>
+                    <Button Content="비우기" Click="Clear_Click"/>
+                    <Button Content="취소" IsCancel="True"/>
+                    <Button x:Name="AddButton" Content="담은 모드 추가" Style="{StaticResource Primary}" Click="Add_Click" Margin="0" IsEnabled="False"/>
+                </StackPanel>
+                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock x:Name="CartTitle" Text="담은 모드 0개" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="CartNames" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis"
+                               Text="＋ 담기를 눌러 여러 모드를 고른 뒤 한꺼번에 추가하세요"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

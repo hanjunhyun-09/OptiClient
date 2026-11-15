@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "opticlient",
+  "version": "${version}",
+  "name": "OptiClient HUD",
+  "description": "FPS·좌표·CPS·키 입력·리치·콤보·타깃 HUD·아이템 개수·퍼스펙티브·크로스헤어 등 PvP HUD",
+  "icon": "assets/opticlient/icon.png",
+  "authors": ["OptiClient"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.opticlient.fabric.OptiClientMod"]
+  },
+  "mixins": ["opticlient.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": ">=1.21 <1.21.2",
+    "fabric-api": "*",
+    "java": ">=21"
+  }
+}

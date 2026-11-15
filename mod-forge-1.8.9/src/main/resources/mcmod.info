@@ -1,0 +1,9 @@
+[{
+  "modid": "opticlient",
+  "name": "OptiClient HUD",
+  "description": "FPS·좌표·CPS·키 입력·리치·콤보·타깃 HUD·아이템 개수·퍼스펙티브·크로스헤어 등 PvP HUD",
+  "logoFile": "/opticlient_logo.png",
+  "version": "${version}",
+  "mcversion": "1.8.9",
+  "authorList": ["OptiClient"]
+}]

@@ -1,0 +1,8 @@
+{
+  "category.opticlient": "OptiClient",
+  "key.opticlient.menu": "Open HUD settings",
+  "key.opticlient.zoom": "Zoom (hold)",
+  "key.opticlient.sprint": "Toggle sprint",
+  "key.opticlient.freelook": "Perspective (freelook)",
+  "key.opticlient.sneak": "Toggle sneak"
+}

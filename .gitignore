@@ -1,0 +1,14 @@
+build/
+.gradle/
+dist/
+bin/
+obj/
+*.user
+.idea/
+run/
+run-autotest/
+run-autotest.log
+
+.vscode/
+*.log
+*.pdb

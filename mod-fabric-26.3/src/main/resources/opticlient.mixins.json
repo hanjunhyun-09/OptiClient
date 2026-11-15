@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.opticlient.fabric.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "AttackMixin",
+    "CameraMixin",
+    "EntityTurnMixin",
+    "FireOverlayMixin",
+    "FovMixin",
+    "GlintMixin",
+    "HurtCamMixin",
+    "MouseHandlerMixin",
+    "OptionInstanceAccessor",
+    "OptionsMixin",
+    "TitleScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
