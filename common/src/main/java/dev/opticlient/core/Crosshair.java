@@ -15,7 +15,11 @@ public final class Crosshair {
     private Crosshair() {
     }
 
+    /** 리치 도우미: 다른 플레이어가 3칸 안에 조준되면 */
+    public static final int IN_REACH = 0xFF55FF55;
+
     static int color() {
+        if (OptiCore.config.reachAssist && PvpAids.inReach()) return IN_REACH;
         switch (OptiCore.config.crosshairColor) {
             case 1: return Theme.accent();
             case 2: return 0xFF55FF55;

@@ -97,7 +97,7 @@ final class FabricGameInfo implements GameInfo {
     }
 
     @Override
-    public double aimDistance(double max) {
+    public double aimDistance(double max, boolean playersOnly) {
         MinecraftClient mc = mc();
         if (mc.player == null || mc.world == null) return -1;
         Entity self = mc.player;
@@ -107,7 +107,7 @@ final class FabricGameInfo implements GameInfo {
         net.minecraft.util.math.Vec3d end = eye.add(look.multiply(max));
         net.minecraft.util.math.Box area = self.getBoundingBox().stretch(look.multiply(max)).expand(1.0);
         double best = -1;
-        for (Entity e : mc.world.getOtherEntities(self, area, x -> x instanceof LivingEntity && x.isAlive() && !x.isSpectator() && x.canHit())) {
+        for (Entity e : mc.world.getOtherEntities(self, area, x -> (playersOnly ? x instanceof PlayerEntity : x instanceof LivingEntity) && x.isAlive() && !x.isSpectator() && x.canHit())) {
             net.minecraft.util.math.Box b = e.getBoundingBox().expand(e.getTargetingMargin());
             double d;
             if (b.contains(eye)) {

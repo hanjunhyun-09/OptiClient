@@ -6,14 +6,14 @@ import java.util.Locale;
 
 /**
  * 화면에 그리는 PvP 보조 표시 (모두 "보여 주기" 만 하고 공격·움직임에는 손대지 않는다).
- * - 리치 도우미: 조준한 상대까지 거리가 공격 가능 거리(3칸) 안이면 크로스헤어 둘레가 초록, 밖이면 빨강
+ * - 리치 도우미: 조준한 다른 플레이어가 공격 가능 거리(3칸) 안이면 크로스헤어가 초록 (Crosshair.color)
  * - 낮은 체력 경고: 화면 가장자리가 빨갛게 깜빡임
  * - 갑옷 경고: 내구도가 거의 다 된 갑옷 이름을 크로스헤어 위에 표시
  */
 public final class PvpAids {
     /** 서바이벌 공격 가능 거리 */
     public static final double REACH = 3.0;
-    /** 이 거리까지는 "가깝지만 아직 못 침" 으로 표시 */
+    /** 조준 거리 HUD 가 보여 주는 최대 거리 */
     private static final double LOOK = 6.0;
 
     /** 이번 프레임 조준 거리 (-1 = 없음). 조준 거리 HUD 도 이 값을 쓴다 */
@@ -30,45 +30,22 @@ public final class PvpAids {
     }
 
     /** HUD 를 그리기 전에 한 번 */
+    /** 자동 테스트용: 싱글플레이에는 다른 플레이어가 없어서 몹으로 확인 */
+    public static boolean anyEntityForTest;
+
     static void update(GameInfo g) {
-        aim = needAim() ? g.aimDistance(LOOK) : -1;
+        aim = needAim() ? g.aimDistance(LOOK, !anyEntityForTest) : -1; // 다른 플레이어만
     }
 
-    static int aimColor(double d) {
-        return d < 0 ? Theme.MUTED : d <= REACH ? 0xFF55FF55 : 0xFFFF5555;
+    /** 조준한 플레이어가 칠 수 있는 거리 안인지 */
+    public static boolean inReach() {
+        return aim >= 0 && aim <= REACH;
     }
 
     static void render(HudRenderer r, GameInfo g, int sw, int sh) {
         HudConfig c = OptiCore.config;
         if (c.lowHpWarn) lowHp(r, g, sw, sh);
-        if (c.reachAssist && g.firstPerson() && aim >= 0) reach(r, sw, sh);
         if (c.armorWarn) armor(r, g, sw, sh);
-    }
-
-    /** 크로스헤어 둘레 네 모서리 괄호 */
-    private static void reach(HudRenderer r, int sw, int sh) {
-        int cx = sw / 2, cy = sh / 2;
-        int col = aimColor(aim);
-        int d = 9, l = 3;
-        for (int pass = 0; pass < 2; pass++) {
-            int g = pass == 0 ? 1 : 0;
-            int k = pass == 0 ? 0x90000000 : col;
-            for (int sx = -1; sx <= 1; sx += 2) {
-                for (int sy = -1; sy <= 1; sy += 2) {
-                    int x = cx + sx * d, y = cy + sy * d;
-                    // 가로 획
-                    int x1 = sx < 0 ? x : x - l + 1, x2 = sx < 0 ? x + l : x + 1;
-                    r.fill(x1 - g, y - g, x2 + g, y + 1 + g, k);
-                    // 세로 획
-                    int y1 = sy < 0 ? y : y - l + 1, y2 = sy < 0 ? y + l : y + 1;
-                    r.fill(x - g, y1 - g, x + 1 + g, y2 + g, k);
-                }
-            }
-        }
-        if (OptiCore.config.reachNumber) {
-            String s = String.format(Locale.ROOT, "%.2f", aim);
-            r.centered(s, cx + 1, cy + d + 6, col, true);
-        }
     }
 
     /** 화면 가장자리 빨간 테두리 (체력이 낮을수록 진하게, 깜빡임) */

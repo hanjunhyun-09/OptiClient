@@ -108,7 +108,7 @@ public class OptiClientForge {
     /** OptiClient 크로스헤어를 켜면 기본 크로스헤어를 그리지 않는다 */
     @SubscribeEvent
     public void onOverlayPre(RenderGameOverlayEvent.Pre e) {
-        if (e.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS && OptiCore.config.crosshair) e.setCanceled(true);
+        if (e.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS && OptiCore.customCrosshair()) e.setCanceled(true);
     }
 
     /** 리치·콤보: 공격하는 순간 상대와 거리를 기록 */

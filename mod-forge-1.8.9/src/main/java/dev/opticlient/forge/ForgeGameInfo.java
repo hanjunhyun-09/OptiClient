@@ -99,7 +99,7 @@ final class ForgeGameInfo implements GameInfo {
     }
 
     @Override
-    public double aimDistance(double max) {
+    public double aimDistance(double max, boolean playersOnly) {
         Minecraft mc = mc();
         if (mc.thePlayer == null || mc.theWorld == null) return -1;
         net.minecraft.entity.Entity self = mc.thePlayer;
@@ -110,7 +110,7 @@ final class ForgeGameInfo implements GameInfo {
                 .addCoord(look.xCoord * max, look.yCoord * max, look.zCoord * max).expand(1.0, 1.0, 1.0);
         double best = -1;
         for (Object o : mc.theWorld.getEntitiesWithinAABBExcludingEntity(self, area)) {
-            if (!(o instanceof EntityLivingBase)) continue;
+            if (!(o instanceof EntityLivingBase) || playersOnly && !(o instanceof EntityPlayer)) continue;
             EntityLivingBase e = (EntityLivingBase) o;
             if (e.isDead || !e.canBeCollidedWith()) continue;
             float m = e.getCollisionBorderSize();

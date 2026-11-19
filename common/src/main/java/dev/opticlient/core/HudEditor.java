@@ -165,7 +165,7 @@ public final class HudEditor {
                 public void set(boolean v) { OptiCore.config.noGlint = v; }
             }, TAB_SETTINGS));
         }
-        cards.add(new Card("reachassist", "리치 도우미", "PvP", "조준한 상대가 3칸 안이면 초록, 밖이면 빨강", Icons.TARGET, new Flag() {
+        cards.add(new Card("reachassist", "리치 도우미", "PvP", "조준한 플레이어가 3칸 안이면 크로스헤어 초록", Icons.TARGET, new Flag() {
             public boolean get() { return OptiCore.config.reachAssist; }
             public void set(boolean v) { OptiCore.config.reachAssist = v; }
         }, TAB_SETTINGS));
@@ -296,10 +296,10 @@ public final class HudEditor {
         }
         if (card.id.equals("freelook")) detailRows.add(rowFreelookKey());
         if (card.id.equals("reachassist")) {
-            detailRows.add(toggleRow("거리 숫자 표시", new Flag() {
-                public boolean get() { return OptiCore.config.reachNumber; }
-                public void set(boolean v) { OptiCore.config.reachNumber = v; }
-            }));
+            // 리치 도우미는 OptiClient 크로스헤어 색을 바꾸므로 모양·평소 색·크기를 여기서도
+            detailRows.add(rowCrossStyle());
+            detailRows.add(rowCrossColor());
+            detailRows.add(rowCrossSize());
         }
         if (card.id.equals("lowhp")) {
             detailRows.add(new Row("경고 체력") {

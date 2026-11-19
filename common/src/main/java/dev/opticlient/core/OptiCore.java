@@ -201,6 +201,11 @@ public final class OptiCore {
         return new int[]{x, y};
     }
 
+    /** 기본 크로스헤어 대신 OptiClient 크로스헤어를 그리는지 (크로스헤어 기능 또는 리치 도우미가 켜져 있으면) */
+    public static boolean customCrosshair() {
+        return config.crosshair || config.reachAssist;
+    }
+
     /** 게임 HUD에 켜진 모듈을 모두 그린다. */
     public static void renderHud(HudRenderer r, GameInfo g, int sw, int sh) {
         try {
@@ -209,7 +214,7 @@ public final class OptiCore {
         } catch (RuntimeException ignored) {
             PvpAids.aim = -1;
         }
-        if (config.crosshair && g.firstPerson()) {
+        if (customCrosshair() && g.firstPerson()) {
             try {
                 Crosshair.render(r, g, sw, sh);
             } catch (RuntimeException ignored) {

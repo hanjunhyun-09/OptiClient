@@ -12,6 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class CrosshairMixin {
     @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true, require = 0)
     private void opticlient$hide(CallbackInfo ci) {
-        if (OptiCore.config.crosshair) ci.cancel();
+        if (OptiCore.customCrosshair()) ci.cancel();
     }
 }

@@ -52,10 +52,8 @@ public class HudConfig {
     public boolean noGlint = false;
     /** 1.8.9: PolyPatcher 의 HUD 캐싱을 켠다 (HUD 를 1초에 60번만 다시 그림) */
     public boolean hudCache = true;
-    /** 리치 도우미: 조준한 상대가 칠 수 있는 거리(3칸) 안이면 크로스헤어 둘레를 초록, 밖이면 빨강으로 */
+    /** 리치 도우미: 조준한 다른 플레이어가 칠 수 있는 거리(3칸) 안이면 크로스헤어가 초록색 (켜면 OptiClient 크로스헤어를 씀) */
     public boolean reachAssist = false;
-    /** 리치 도우미: 크로스헤어 아래에 거리 숫자 */
-    public boolean reachNumber = true;
     /** 체력이 낮으면 화면 가장자리를 빨갛게 */
     public boolean lowHpWarn = false;
     /** 낮은 체력 경고 기준 (체력, 2 = 하트 1칸) */

@@ -611,7 +611,7 @@ public final class Modules {
     static final class Aim extends Module.TextModule {
         Aim() {
             super("aim", "조준 거리", false, AUTO, AUTO);
-            meta("PvP", "조준한 상대까지 거리 (3칸 안 초록)", Icons.TARGET);
+            meta("PvP", "조준한 플레이어까지 거리 (3칸 안이면 초록)", Icons.TARGET);
         }
 
         @Override
@@ -627,7 +627,7 @@ public final class Modules {
 
         @Override
         protected int valueColor(String line, HudConfig cfg) {
-            return PvpAids.aim < 0 ? cfg.textColor : PvpAids.aimColor(PvpAids.aim);
+            return PvpAids.inReach() ? Crosshair.IN_REACH : cfg.textColor;
         }
     }
 }

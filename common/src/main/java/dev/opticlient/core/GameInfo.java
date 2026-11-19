@@ -76,9 +76,9 @@ public interface GameInfo {
 
     /**
      * 몸이 보는 방향으로 max 칸까지 쏜 선이 처음 맞는 살아 있는 엔티티(충돌 상자)까지의 거리.
-     * 블록에 가리거나 없으면 -1. (공격 판정과 같은 방식: 눈 위치 → 상자 표면)
+     * 블록에 가리거나 없으면 -1. (공격 판정과 같은 방식: 눈 위치 → 상자 표면). playersOnly 면 다른 플레이어만
      */
-    default double aimDistance(double max) {
+    default double aimDistance(double max, boolean playersOnly) {
         return -1;
     }
 

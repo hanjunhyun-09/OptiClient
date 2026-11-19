@@ -99,7 +99,7 @@ final class MojGameInfo implements GameInfo {
     }
 
     @Override
-    public double aimDistance(double max) {
+    public double aimDistance(double max, boolean playersOnly) {
         Minecraft mc = mc();
         if (mc.player == null || mc.level == null) return -1;
         Entity self = mc.player;
@@ -109,7 +109,7 @@ final class MojGameInfo implements GameInfo {
         net.minecraft.world.phys.Vec3 end = eye.add(look.scale(max));
         net.minecraft.world.phys.AABB area = self.getBoundingBox().expandTowards(look.scale(max)).inflate(1.0);
         double best = -1;
-        for (Entity e : mc.level.getEntities(self, area, x -> x instanceof LivingEntity && x.isAlive() && !x.isSpectator() && x.isPickable())) {
+        for (Entity e : mc.level.getEntities(self, area, x -> (playersOnly ? x instanceof net.minecraft.world.entity.player.Player : x instanceof LivingEntity) && x.isAlive() && !x.isSpectator() && x.isPickable())) {
             net.minecraft.world.phys.AABB b = e.getBoundingBox().inflate(e.getPickRadius());
             double d;
             if (b.contains(eye)) {

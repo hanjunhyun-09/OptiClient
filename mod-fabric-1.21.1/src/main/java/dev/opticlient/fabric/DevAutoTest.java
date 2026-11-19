@@ -219,13 +219,15 @@ final class DevAutoTest {
                 OptiCore.config.lowHpAt = 8; // 시험에서 남는 체력(약 7)도 경고가 보이게
                 OptiCore.config.armorWarn = true;
                 OptiCore.config.modules.get("aim").enabled = true;
+                dev.opticlient.core.PvpAids.anyEntityForTest = true; // 싱글플레이라 좀비로 확인
                 cmd(mc, "tp @s ~ ~ ~ 0 0");
                 cmd(mc, "summon zombie ~ ~ ~2.5 {NoAI:1b,PersistenceRequired:1b,CustomName:'\"Near\"'}");
                 wait = 30;
                 state = 60;
             }
             case 60 -> {
-                log(String.format(java.util.Locale.ROOT, "리치 도우미 (가까이): 조준 거리 %.2f", FabricGameInfo.INSTANCE.aimDistance(6)));
+                log(String.format(java.util.Locale.ROOT, "리치 도우미 (가까이): 조준 거리 %.2f, 플레이어만이면 %.2f",
+                        FabricGameInfo.INSTANCE.aimDistance(6, false), FabricGameInfo.INSTANCE.aimDistance(6, true)));
                 shot(mc, "reach-in");
                 cmd(mc, "kill @e[type=zombie]");
                 cmd(mc, "summon zombie ~ ~ ~4.6 {NoAI:1b,PersistenceRequired:1b,CustomName:'\"Far\"'}");
@@ -233,8 +235,9 @@ final class DevAutoTest {
                 state = 61;
             }
             case 61 -> {
-                log(String.format(java.util.Locale.ROOT, "리치 도우미 (멀리): 조준 거리 %.2f", FabricGameInfo.INSTANCE.aimDistance(6)));
+                log(String.format(java.util.Locale.ROOT, "리치 도우미 (멀리): 조준 거리 %.2f", FabricGameInfo.INSTANCE.aimDistance(6, false)));
                 shot(mc, "reach-out");
+                dev.opticlient.core.PvpAids.anyEntityForTest = false;
                 cmd(mc, "kill @e[type=zombie]");
                 cmd(mc, "item replace entity @s armor.head with diamond_helmet[damage=355]");
                 cmd(mc, "gamemode survival");

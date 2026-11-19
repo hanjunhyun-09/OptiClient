@@ -43,7 +43,7 @@ public final class OptiClientMod implements ClientModInitializer {
 
         // OptiClient 크로스헤어를 켜면 기본 크로스헤어를 그리지 않는다
         HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, old -> (g, d) -> {
-            if (!OptiCore.config.crosshair) old.render(g, d);
+            if (!OptiCore.customCrosshair()) old.render(g, d);
         });
 
         // 채팅 바로 아래 층에 HUD 를 그린다
