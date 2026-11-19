@@ -97,6 +97,37 @@ final class FabricGameInfo implements GameInfo {
     }
 
     @Override
+    public double aimDistance(double max) {
+        MinecraftClient mc = mc();
+        if (mc.player == null || mc.world == null) return -1;
+        Entity self = mc.player;
+        // 몸이 보는 방향 (퍼스펙티브로 카메라만 돌려도 공격은 몸 방향으로 나감)
+        net.minecraft.util.math.Vec3d eye = self.getCameraPosVec(1f);
+        net.minecraft.util.math.Vec3d look = self.getRotationVec(1f);
+        net.minecraft.util.math.Vec3d end = eye.add(look.multiply(max));
+        net.minecraft.util.math.Box area = self.getBoundingBox().stretch(look.multiply(max)).expand(1.0);
+        double best = -1;
+        for (Entity e : mc.world.getOtherEntities(self, area, x -> x instanceof LivingEntity && x.isAlive() && !x.isSpectator() && x.canHit())) {
+            net.minecraft.util.math.Box b = e.getBoundingBox().expand(e.getTargetingMargin());
+            double d;
+            if (b.contains(eye)) {
+                d = 0;
+            } else {
+                java.util.Optional<net.minecraft.util.math.Vec3d> hit = b.raycast(eye, end);
+                if (hit.isEmpty()) continue;
+                d = eye.distanceTo(hit.get());
+            }
+            if (best < 0 || d < best) best = d;
+        }
+        if (best < 0) return -1;
+        // 사이에 블록이 있으면 못 침
+        net.minecraft.util.hit.BlockHitResult block = mc.world.raycast(new net.minecraft.world.RaycastContext(eye, end,
+                net.minecraft.world.RaycastContext.ShapeType.OUTLINE, net.minecraft.world.RaycastContext.FluidHandling.NONE, self));
+        if (block.getType() != net.minecraft.util.hit.HitResult.Type.MISS && eye.distanceTo(block.getPos()) < best) return -1;
+        return best;
+    }
+
+    @Override
     public Object slot(int i) {
         if (mc().player == null) return null;
         ItemStack s = mc().player.getInventory().getStack(i);

@@ -74,6 +74,14 @@ public interface GameInfo {
         return null;
     }
 
+    /**
+     * 몸이 보는 방향으로 max 칸까지 쏜 선이 처음 맞는 살아 있는 엔티티(충돌 상자)까지의 거리.
+     * 블록에 가리거나 없으면 -1. (공격 판정과 같은 방식: 눈 위치 → 상자 표면)
+     */
+    default double aimDistance(double max) {
+        return -1;
+    }
+
     /** 배고픔 (0~20) */
     default int food() {
         return 20;

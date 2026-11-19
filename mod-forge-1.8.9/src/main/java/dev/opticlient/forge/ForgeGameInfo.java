@@ -99,6 +99,40 @@ final class ForgeGameInfo implements GameInfo {
     }
 
     @Override
+    public double aimDistance(double max) {
+        Minecraft mc = mc();
+        if (mc.thePlayer == null || mc.theWorld == null) return -1;
+        net.minecraft.entity.Entity self = mc.thePlayer;
+        net.minecraft.util.Vec3 eye = self.getPositionEyes(1f);
+        net.minecraft.util.Vec3 look = self.getLook(1f);
+        net.minecraft.util.Vec3 end = eye.addVector(look.xCoord * max, look.yCoord * max, look.zCoord * max);
+        net.minecraft.util.AxisAlignedBB area = self.getEntityBoundingBox()
+                .addCoord(look.xCoord * max, look.yCoord * max, look.zCoord * max).expand(1.0, 1.0, 1.0);
+        double best = -1;
+        for (Object o : mc.theWorld.getEntitiesWithinAABBExcludingEntity(self, area)) {
+            if (!(o instanceof EntityLivingBase)) continue;
+            EntityLivingBase e = (EntityLivingBase) o;
+            if (e.isDead || !e.canBeCollidedWith()) continue;
+            float m = e.getCollisionBorderSize();
+            net.minecraft.util.AxisAlignedBB b = e.getEntityBoundingBox().expand(m, m, m);
+            double d;
+            if (b.isVecInside(eye)) {
+                d = 0;
+            } else {
+                net.minecraft.util.MovingObjectPosition hit = b.calculateIntercept(eye, end);
+                if (hit == null) continue;
+                d = eye.distanceTo(hit.hitVec);
+            }
+            if (best < 0 || d < best) best = d;
+        }
+        if (best < 0) return -1;
+        // 사이에 블록이 있으면 못 침
+        net.minecraft.util.MovingObjectPosition block = mc.theWorld.rayTraceBlocks(eye, end, false, false, false);
+        if (block != null && block.hitVec != null && eye.distanceTo(block.hitVec) < best) return -1;
+        return best;
+    }
+
+    @Override
     public Object slot(int i) {
         if (mc().thePlayer == null) return null;
         return mc().thePlayer.inventory.mainInventory[i];

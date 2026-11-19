@@ -52,6 +52,18 @@ public class HudConfig {
     public boolean noGlint = false;
     /** 1.8.9: PolyPatcher 의 HUD 캐싱을 켠다 (HUD 를 1초에 60번만 다시 그림) */
     public boolean hudCache = true;
+    /** 리치 도우미: 조준한 상대가 칠 수 있는 거리(3칸) 안이면 크로스헤어 둘레를 초록, 밖이면 빨강으로 */
+    public boolean reachAssist = false;
+    /** 리치 도우미: 크로스헤어 아래에 거리 숫자 */
+    public boolean reachNumber = true;
+    /** 체력이 낮으면 화면 가장자리를 빨갛게 */
+    public boolean lowHpWarn = false;
+    /** 낮은 체력 경고 기준 (체력, 2 = 하트 1칸) */
+    public int lowHpAt = 6;
+    /** 갑옷 내구도가 낮으면 화면에 경고 */
+    public boolean armorWarn = false;
+    /** 갑옷 경고 기준 (남은 내구도 %) */
+    public int armorWarnPct = 10;
     /** 엔티티 히트박스 표시 */
     public boolean hitboxes = false;
     /** OptiClient 크로스헤어 사용 */

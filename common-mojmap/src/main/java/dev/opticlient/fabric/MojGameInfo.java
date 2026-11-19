@@ -99,6 +99,37 @@ final class MojGameInfo implements GameInfo {
     }
 
     @Override
+    public double aimDistance(double max) {
+        Minecraft mc = mc();
+        if (mc.player == null || mc.level == null) return -1;
+        Entity self = mc.player;
+        // 몸이 보는 방향 (퍼스펙티브로 카메라만 돌려도 공격은 몸 방향으로 나감)
+        net.minecraft.world.phys.Vec3 eye = self.getEyePosition(1f);
+        net.minecraft.world.phys.Vec3 look = self.getViewVector(1f);
+        net.minecraft.world.phys.Vec3 end = eye.add(look.scale(max));
+        net.minecraft.world.phys.AABB area = self.getBoundingBox().expandTowards(look.scale(max)).inflate(1.0);
+        double best = -1;
+        for (Entity e : mc.level.getEntities(self, area, x -> x instanceof LivingEntity && x.isAlive() && !x.isSpectator() && x.isPickable())) {
+            net.minecraft.world.phys.AABB b = e.getBoundingBox().inflate(e.getPickRadius());
+            double d;
+            if (b.contains(eye)) {
+                d = 0;
+            } else {
+                java.util.Optional<net.minecraft.world.phys.Vec3> hit = b.clip(eye, end);
+                if (hit.isEmpty()) continue;
+                d = eye.distanceTo(hit.get());
+            }
+            if (best < 0 || d < best) best = d;
+        }
+        if (best < 0) return -1;
+        // 사이에 블록이 있으면 못 침
+        net.minecraft.world.phys.BlockHitResult block = mc.level.clip(new net.minecraft.world.level.ClipContext(eye, end,
+                net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, self));
+        if (block.getType() != net.minecraft.world.phys.HitResult.Type.MISS && eye.distanceTo(block.getLocation()) < best) return -1;
+        return best;
+    }
+
+    @Override
     public Object slot(int i) {
         if (mc().player == null) return null;
         ItemStack s = mc().player.getInventory().getItem(i);

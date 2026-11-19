@@ -81,6 +81,10 @@ public abstract class Module {
      * 모던은 "라벨 값"(회색/흰색), 클래식·미니멀은 "라벨: 값"(강조색/흰색).
      */
     protected static int line(HudRenderer r, HudConfig cfg, String s, int x, int y, boolean draw) {
+        return line(r, cfg, s, x, y, draw, cfg.textColor);
+    }
+
+    protected static int line(HudRenderer r, HudConfig cfg, String s, int x, int y, boolean draw, int valueColor) {
         int idx = s.indexOf(": ");
         if (idx > 0 && Theme.hideLabel) {
             // 이름 숨김: 값만
@@ -88,7 +92,7 @@ public abstract class Module {
             idx = -1;
         }
         if (idx <= 0) {
-            if (draw) r.text(s, x, y, cfg.textColor, cfg.shadow);
+            if (draw) r.text(s, x, y, valueColor, cfg.shadow);
             return r.width(s);
         }
         String label = Theme.modern() ? s.substring(0, idx) + " " : s.substring(0, idx + 1);
@@ -96,7 +100,7 @@ public abstract class Module {
         int lw = r.width(label);
         if (draw) {
             r.text(label, x, y, Theme.label(x, y), cfg.shadow);
-            r.text(value, x + lw, y, cfg.textColor, cfg.shadow);
+            r.text(value, x + lw, y, valueColor, cfg.shadow);
         }
         return lw + r.width(value);
     }
@@ -118,6 +122,11 @@ public abstract class Module {
             return true;
         }
 
+        /** 줄마다 값 글자색 (기본은 설정한 글자색) */
+        protected int valueColor(String line, HudConfig cfg) {
+            return cfg.textColor;
+        }
+
         @Override
         public void render(HudRenderer r, GameInfo g, HudConfig cfg, int x, int y, boolean editing) {
             List<String> ls = lines(g);
@@ -135,7 +144,9 @@ public abstract class Module {
             if (Theme.modern()) w = Math.max(w, 62); // 세로로 쌓였을 때 폭이 들쭉날쭉하지 않게
             int h = ls.size() * lh + Theme.padY() * 2 - 1;
             Theme.panel(r, x, y, w, h);
-            for (int i = 0; i < ls.size(); i++) line(r, cfg, ls.get(i), x + Theme.padLeft(), y + Theme.padY() + i * lh, true);
+            for (int i = 0; i < ls.size(); i++) {
+                line(r, cfg, ls.get(i), x + Theme.padLeft(), y + Theme.padY() + i * lh, true, valueColor(ls.get(i), cfg));
+            }
             lastW = w;
             lastH = h;
         }

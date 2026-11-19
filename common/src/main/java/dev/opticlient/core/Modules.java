@@ -37,6 +37,7 @@ public final class Modules {
         list.add(new Memory());
         list.add(new Server());
         list.add(new Inventory());
+        list.add(new Aim());
         return list;
     }
 
@@ -175,7 +176,28 @@ public final class Modules {
 
         @Override
         protected List<String> preview() {
-            return Arrays.asList("신속 II: 1:30", "힘 I: 0:45");
+            return Arrays.asList("신속 II: 1:30", "힘 I: 0:08");
+        }
+
+        @Override
+        public List<Option> options() {
+            return Collections.singletonList(new Option("ending", "10초 안에 끝나는 효과 빨갛게", true));
+        }
+
+        @Override
+        protected int valueColor(String line, HudConfig cfg) {
+            if (!opt("ending")) return cfg.textColor;
+            // "신속 II: 1:23" → 남은 초
+            int c = line.lastIndexOf(':');
+            int c2 = c > 0 ? line.lastIndexOf(' ', c) : -1;
+            try {
+                int min = Integer.parseInt(line.substring(c2 + 1, c).trim());
+                int sec = Integer.parseInt(line.substring(c + 1).trim());
+                if (min * 60 + sec <= 10) return (System.currentTimeMillis() / 400) % 2 == 0 ? 0xFFFF5555 : 0xFFFFD166;
+            } catch (RuntimeException ignored) {
+                // ∞ 등
+            }
+            return cfg.textColor;
         }
     }
 
@@ -582,6 +604,30 @@ public final class Modules {
             }
             lastW = w;
             lastH = h;
+        }
+    }
+
+    /** 조준한 상대까지 거리 (3칸 안 초록, 밖 빨강) */
+    static final class Aim extends Module.TextModule {
+        Aim() {
+            super("aim", "조준 거리", false, AUTO, AUTO);
+            meta("PvP", "조준한 상대까지 거리 (3칸 안 초록)", Icons.TARGET);
+        }
+
+        @Override
+        protected List<String> lines(GameInfo g) {
+            double d = PvpAids.aim;
+            return Collections.singletonList("조준: " + (d < 0 ? "-" : String.format(Locale.ROOT, "%.2f", d) + (d <= PvpAids.REACH ? " (닿음)" : "")));
+        }
+
+        @Override
+        protected List<String> preview() {
+            return Collections.singletonList("조준: 2.84 (닿음)");
+        }
+
+        @Override
+        protected int valueColor(String line, HudConfig cfg) {
+            return PvpAids.aim < 0 ? cfg.textColor : PvpAids.aimColor(PvpAids.aim);
         }
     }
 }

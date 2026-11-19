@@ -213,6 +213,46 @@ final class DevAutoTest {
             case 7 -> {
                 shot(mc, "edit");
                 mc.setScreen(null);
+                // ---- PvP 보조 표시 확인: 리치 도우미 · 조준 거리 · 낮은 체력 · 갑옷 경고 ----
+                OptiCore.config.reachAssist = true;
+                OptiCore.config.lowHpWarn = true;
+                OptiCore.config.lowHpAt = 8; // 시험에서 남는 체력(약 7)도 경고가 보이게
+                OptiCore.config.armorWarn = true;
+                OptiCore.config.modules.get("aim").enabled = true;
+                cmd(mc, "tp @s ~ ~ ~ 0 0");
+                cmd(mc, "summon zombie ~ ~ ~2.5 {NoAI:1b,PersistenceRequired:1b,CustomName:'\"Near\"'}");
+                wait = 30;
+                state = 60;
+            }
+            case 60 -> {
+                log(String.format(java.util.Locale.ROOT, "리치 도우미 (가까이): 조준 거리 %.2f", FabricGameInfo.INSTANCE.aimDistance(6)));
+                shot(mc, "reach-in");
+                cmd(mc, "kill @e[type=zombie]");
+                cmd(mc, "summon zombie ~ ~ ~4.6 {NoAI:1b,PersistenceRequired:1b,CustomName:'\"Far\"'}");
+                wait = 30;
+                state = 61;
+            }
+            case 61 -> {
+                log(String.format(java.util.Locale.ROOT, "리치 도우미 (멀리): 조준 거리 %.2f", FabricGameInfo.INSTANCE.aimDistance(6)));
+                shot(mc, "reach-out");
+                cmd(mc, "kill @e[type=zombie]");
+                cmd(mc, "item replace entity @s armor.head with diamond_helmet[damage=355]");
+                cmd(mc, "gamemode survival");
+                cmd(mc, "damage @s 15");
+                wait = 30;
+                state = 62;
+            }
+            case 62 -> {
+                log("낮은 체력·갑옷 경고: 체력 " + FabricGameInfo.INSTANCE.health());
+                shot(mc, "warn");
+                cmd(mc, "gamemode creative");
+                cmd(mc, "effect give @s instant_health 1 5");
+                cmd(mc, "item replace entity @s armor.head with diamond_helmet");
+                OptiCore.config.reachAssist = false;
+                OptiCore.config.lowHpWarn = false;
+                OptiCore.config.lowHpAt = 6;
+                OptiCore.config.armorWarn = false;
+                OptiCore.config.modules.get("aim").enabled = false;
                 OptiCore.config.pvpBoost = false;
                 cmd(mc, "tp @s ~ ~ ~ 0 0");
                 pvpScene(mc);

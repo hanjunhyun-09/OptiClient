@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\opticlient.ico</ApplicationIcon>
     <!-- 런처 버전 (release.ps1 이 올린다, 자동 업데이트가 이 값과 GitHub 릴리스 태그를 비교) -->
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

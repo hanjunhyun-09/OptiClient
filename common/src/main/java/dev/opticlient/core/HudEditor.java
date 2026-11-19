@@ -165,6 +165,18 @@ public final class HudEditor {
                 public void set(boolean v) { OptiCore.config.noGlint = v; }
             }, TAB_SETTINGS));
         }
+        cards.add(new Card("reachassist", "리치 도우미", "PvP", "조준한 상대가 3칸 안이면 초록, 밖이면 빨강", Icons.TARGET, new Flag() {
+            public boolean get() { return OptiCore.config.reachAssist; }
+            public void set(boolean v) { OptiCore.config.reachAssist = v; }
+        }, TAB_SETTINGS));
+        cards.add(new Card("lowhp", "낮은 체력 경고", "PvP", "체력이 낮으면 화면 가장자리가 빨갛게", Icons.HEART, new Flag() {
+            public boolean get() { return OptiCore.config.lowHpWarn; }
+            public void set(boolean v) { OptiCore.config.lowHpWarn = v; }
+        }, TAB_SETTINGS));
+        cards.add(new Card("armorwarn", "갑옷 경고", "PvP", "갑옷이 부서지기 직전이면 알림", Icons.ARMOR, new Flag() {
+            public boolean get() { return OptiCore.config.armorWarn; }
+            public void set(boolean v) { OptiCore.config.armorWarn = v; }
+        }, TAB_SETTINGS));
         cards.add(new Card("hitboxes", "히트박스", "PvP", "엔티티 충돌 상자 표시", Icons.BOX, new Flag() {
             public boolean get() { return OptiCore.config.hitboxes; }
             public void set(boolean v) { OptiCore.config.hitboxes = v; }
@@ -283,6 +295,30 @@ public final class HudEditor {
             detailRows.add(rowCrossSize());
         }
         if (card.id.equals("freelook")) detailRows.add(rowFreelookKey());
+        if (card.id.equals("reachassist")) {
+            detailRows.add(toggleRow("거리 숫자 표시", new Flag() {
+                public boolean get() { return OptiCore.config.reachNumber; }
+                public void set(boolean v) { OptiCore.config.reachNumber = v; }
+            }));
+        }
+        if (card.id.equals("lowhp")) {
+            detailRows.add(new Row("경고 체력") {
+                String value() { return "하트 " + (OptiCore.config.lowHpAt / 2) + "칸 이하"; }
+                void run() {
+                    int v = OptiCore.config.lowHpAt;
+                    OptiCore.config.lowHpAt = v >= 10 ? 4 : v + 2;
+                }
+            });
+        }
+        if (card.id.equals("armorwarn")) {
+            detailRows.add(new Row("경고 내구도") {
+                String value() { return OptiCore.config.armorWarnPct + "% 이하"; }
+                void run() {
+                    int v = OptiCore.config.armorWarnPct;
+                    OptiCore.config.armorWarnPct = v >= 30 ? 5 : v == 5 ? 10 : v + 10;
+                }
+            });
+        }
     }
 
     private static Row rowZoom() {

@@ -203,6 +203,12 @@ public final class OptiCore {
 
     /** 게임 HUD에 켜진 모듈을 모두 그린다. */
     public static void renderHud(HudRenderer r, GameInfo g, int sw, int sh) {
+        try {
+            PvpAids.update(g);
+            PvpAids.render(r, g, sw, sh);
+        } catch (RuntimeException ignored) {
+            PvpAids.aim = -1;
+        }
         if (config.crosshair && g.firstPerson()) {
             try {
                 Crosshair.render(r, g, sw, sh);
