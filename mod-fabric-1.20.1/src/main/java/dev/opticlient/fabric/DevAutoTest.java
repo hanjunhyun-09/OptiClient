@@ -329,6 +329,21 @@ final class DevAutoTest {
                 state = 12;
             }
             case 12 -> {
+                // 싱글플레이에서 나가면 OptiClient 타이틀 화면이 나와야 한다 (일시정지 화면의 "저장하고 나가기" 와 같은 순서)
+                mc.world.disconnect();
+                mc.disconnect(new net.minecraft.client.gui.screen.MessageScreen(Text.literal("저장 중")));
+                mc.setScreen(new TitleScreen());
+                wait = 100;
+                state = 14;
+            }
+            case 14 -> {
+                log("나가기 후 화면: " + (mc.currentScreen == null ? "없음" : mc.currentScreen.getClass().getSimpleName()));
+                mc.setScreen(null); // 월드 없이 화면 닫기 → 게임이 타이틀 화면을 직접 만드는 경로
+                wait = 20;
+                state = 15;
+            }
+            case 15 -> {
+                log("화면 닫기 후 화면: " + (mc.currentScreen == null ? "없음" : mc.currentScreen.getClass().getSimpleName()));
                 mc.scheduleStop();
                 state = 13;
             }

@@ -306,6 +306,21 @@ public final class DevAutoTest {
                 state = 11;
                 break;
             case 11:
+                // 싱글플레이에서 나가면 OptiClient 타이틀 화면이 나와야 한다 (일시정지 화면의 "저장하고 나가기" 와 같은 순서)
+                mc.theWorld.sendQuittingDisconnectingPacket();
+                mc.loadWorld(null);
+                mc.displayGuiScreen(new GuiMainMenu());
+                wait = 100;
+                state = 14;
+                break;
+            case 14:
+                log("나가기 후 화면: " + (mc.currentScreen == null ? "없음" : mc.currentScreen.getClass().getSimpleName()));
+                mc.displayGuiScreen(null); // 월드 없이 화면 닫기 → 게임이 타이틀 화면을 직접 만드는 경로
+                wait = 20;
+                state = 15;
+                break;
+            case 15:
+                log("화면 닫기 후 화면: " + (mc.currentScreen == null ? "없음" : mc.currentScreen.getClass().getSimpleName()));
                 mc.shutdown();
                 state = 12;
                 break;

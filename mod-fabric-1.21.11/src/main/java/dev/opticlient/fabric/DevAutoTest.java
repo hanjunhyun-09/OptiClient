@@ -188,6 +188,14 @@ final class DevAutoTest {
                 state = 12;
             }
             case 12 -> {
+                // 싱글플레이에서 나가면 OptiClient 타이틀 화면이 나와야 한다
+                mc.disconnectFromWorld(net.minecraft.network.chat.Component.literal("OptiClient test"));
+                wait = 100;
+                state = 14;
+            }
+            case 14 -> {
+                var sc = mc.screen;
+                log("나가기 후 화면: " + (sc == null ? "없음" : sc.getClass().getSimpleName()));
                 mc.stop();
                 state = 13;
             }

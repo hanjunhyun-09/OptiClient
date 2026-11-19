@@ -99,6 +99,13 @@ final class MojGameInfo implements GameInfo {
     }
 
     @Override
+    public Object slot(int i) {
+        if (mc().player == null) return null;
+        ItemStack s = mc().player.getInventory().getItem(i);
+        return s.isEmpty() ? null : s;
+    }
+
+    @Override
     public Object mainHand() {
         ItemStack s = mc().player.getMainHandItem();
         return s.isEmpty() ? null : s;

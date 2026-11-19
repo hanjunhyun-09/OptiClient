@@ -69,6 +69,11 @@ public interface GameInfo {
         return Collections.emptyMap();
     }
 
+    /** 인벤토리 칸 아이템 (0~8 핫바, 9~35 가방). 비어 있으면 null */
+    default Object slot(int i) {
+        return null;
+    }
+
     /** 배고픔 (0~20) */
     default int food() {
         return 20;

@@ -99,6 +99,12 @@ final class ForgeGameInfo implements GameInfo {
     }
 
     @Override
+    public Object slot(int i) {
+        if (mc().thePlayer == null) return null;
+        return mc().thePlayer.inventory.mainInventory[i];
+    }
+
+    @Override
     public Object mainHand() {
         return mc().thePlayer.getHeldItem();
     }

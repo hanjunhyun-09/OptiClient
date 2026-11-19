@@ -148,7 +148,22 @@ final class DevAutoTest {
                 cmd(mc, "item replace entity @s weapon.mainhand with diamond_sword");
                 cmd(mc, "effect give @s speed 300 1");
                 cmd(mc, "effect give @s strength 300 0");
-                for (String id : new String[]{"speed", "clock"}) {
+                cmd(mc, "give @s golden_apple 12");
+                cmd(mc, "give @s ender_pearl 16");
+                cmd(mc, "give @s cobblestone 64");
+                cmd(mc, "give @s bow 1");
+                cmd(mc, "give @s arrow 32");
+                // 핫바를 채우고 가방까지 들어가게 (인벤토리 HUD 확인)
+                for (String it : new String[]{"oak_log 64", "torch 32", "water_bucket 1", "cobweb 8", "splash_potion 3", "totem_of_undying 1",
+                        "diamond 20", "iron_ingot 40", "bread 16", "tnt 5", "lava_bucket 1", "shield 1"}) cmd(mc, "give @s " + it);
+                // 모듈별 설정 확인: FPS 이름 숨김 + 초록 글자, 좌표 배경 끔 + 노랑 글자
+                HudConfig.ModuleState fps = OptiCore.config.modules.get("fps");
+                fps.label = false;
+                fps.color = 2;
+                HudConfig.ModuleState co = OptiCore.config.modules.get("coords");
+                co.bg = 2;
+                co.color = 3;
+                for (String id : new String[]{"speed", "clock", "inventory"}) {
                     HudConfig.ModuleState s = OptiCore.config.modules.get(id);
                     if (s != null) s.enabled = true;
                 }
@@ -171,6 +186,12 @@ final class DevAutoTest {
             }
             case 5 -> {
                 shot(mc, "menu");
+                if (mc.currentScreen instanceof EditorScreen es) es.editor.openDetailForTest("keystrokes");
+                wait = 10;
+                state = 50;
+            }
+            case 50 -> {
+                shot(mc, "detail");
                 if (mc.currentScreen instanceof EditorScreen es) es.editor.selectTab(2);
                 wait = 10;
                 state = 6;
@@ -180,6 +201,11 @@ final class DevAutoTest {
                 if (mc.currentScreen instanceof EditorScreen es) {
                     es.editor.selectTab(1);
                     es.editor.selectForTest("keystrokes", 1.3f); // 크기 조절·도구 막대 확인용
+                    // 가운데 정렬 안내선 확인용: 키 입력을 화면 가운데 위쪽에
+                    HudConfig.ModuleState ks = OptiCore.config.modules.get("keystrokes");
+                    ks.anchor = "tc";
+                    ks.x = 0;
+                    ks.y = 50;
                 }
                 wait = 10;
                 state = 7;
@@ -253,6 +279,21 @@ final class DevAutoTest {
                 state = 12;
             }
             case 12 -> {
+                // 싱글플레이에서 나가면 OptiClient 타이틀 화면이 나와야 한다 (일시정지 화면의 "저장하고 나가기" 와 같은 순서)
+                mc.world.disconnect();
+                mc.disconnect(new net.minecraft.client.gui.screen.MessageScreen(Text.literal("저장 중")));
+                mc.setScreen(new TitleScreen());
+                wait = 100;
+                state = 14;
+            }
+            case 14 -> {
+                log("나가기 후 화면: " + (mc.currentScreen == null ? "없음" : mc.currentScreen.getClass().getSimpleName()));
+                mc.setScreen(null); // 월드 없이 화면 닫기 → 게임이 타이틀 화면을 직접 만드는 경로
+                wait = 20;
+                state = 15;
+            }
+            case 15 -> {
+                log("화면 닫기 후 화면: " + (mc.currentScreen == null ? "없음" : mc.currentScreen.getClass().getSimpleName()));
                 mc.scheduleStop();
                 state = 13;
             }

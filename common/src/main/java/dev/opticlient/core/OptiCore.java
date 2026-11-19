@@ -183,6 +183,10 @@ public final class OptiCore {
             // 타깃 HUD: 크로스헤어 오른쪽 위 (아래쪽 갑옷 HUD 와 겹치지 않게)
             x = sw / 2 + 20;
             y = sh / 2 - h - 14;
+        } else if (x == -6 && y == -6) {
+            // 인벤토리: 핫바 위 가운데 (체력·배고픔 줄 위)
+            x = (sw - w) / 2;
+            y = sh - 58 - h;
         } else if (x == -5 && y == -5) {
             // 나침반: 화면 위 가운데
             x = (sw - w) / 2;
@@ -225,6 +229,24 @@ public final class OptiCore {
 
     /** 크기 배율을 적용해 그리고 boxW/boxH(화면상 크기)를 갱신한다 */
     static void renderModule(Module m, HudConfig.ModuleState s, HudRenderer r, GameInfo g, int x, int y, boolean editing) {
+        // 모듈마다 정한 배경·그림자·글자색·이름 표시를 이 모듈을 그리는 동안만 적용
+        boolean bg = config.background, sh = config.shadow;
+        int tc = config.textColor;
+        if (s.bg != 0) config.background = s.bg == 1;
+        if (s.shadowMode != 0) config.shadow = s.shadowMode == 1;
+        config.textColor = Theme.textColor(s.color);
+        Theme.hideLabel = !s.label;
+        try {
+            renderScaled(m, s, r, g, x, y, editing);
+        } finally {
+            config.background = bg;
+            config.shadow = sh;
+            config.textColor = tc;
+            Theme.hideLabel = false;
+        }
+    }
+
+    private static void renderScaled(Module m, HudConfig.ModuleState s, HudRenderer r, GameInfo g, int x, int y, boolean editing) {
         float sc = scaleOf(s);
         if (Math.abs(sc - 1f) < 0.01f) {
             m.render(r, g, config, x, y, editing);

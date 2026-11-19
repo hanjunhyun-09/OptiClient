@@ -210,7 +210,9 @@ public class OptiClientForge {
     /** 기본 타이틀 화면이 열리려 하면 OptiClient 타이틀 화면으로 바꾼다 */
     @SubscribeEvent
     public void onGuiOpen(GuiOpenEvent e) {
-        if (e.gui instanceof GuiMainMenu && e.gui != OptiTitleGui.vanilla && OptiCore.config.customTitle) {
+        // 월드가 없을 때 화면을 닫으면(null) 게임이 이 다음에 기본 타이틀 화면을 직접 만든다 → 그것도 바꾼다
+        boolean closingToTitle = e.gui == null && Minecraft.getMinecraft().theWorld == null;
+        if ((closingToTitle || e.gui instanceof GuiMainMenu && e.gui != OptiTitleGui.vanilla) && OptiCore.config.customTitle) {
             e.gui = new OptiTitleGui();
         }
     }

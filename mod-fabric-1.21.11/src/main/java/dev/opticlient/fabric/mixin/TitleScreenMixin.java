@@ -15,7 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class TitleScreenMixin {
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void opticlient$title(Screen screen, CallbackInfo ci) {
-        if (screen instanceof TitleScreen && screen != OptiTitleScreen.vanilla && OptiCore.config.customTitle) {
+        // 월드가 없을 때 화면을 닫으면(null) 게임이 이 안에서 기본 타이틀 화면을 직접 만든다 → 그것도 바꾼다
+        boolean closingToTitle = screen == null && ((Minecraft) (Object) this).level == null;
+        if ((closingToTitle || screen instanceof TitleScreen && screen != OptiTitleScreen.vanilla) && OptiCore.config.customTitle) {
             ci.cancel();
             ((Minecraft) (Object) this).setScreen(new OptiTitleScreen());
         }

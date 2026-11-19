@@ -97,6 +97,13 @@ final class FabricGameInfo implements GameInfo {
     }
 
     @Override
+    public Object slot(int i) {
+        if (mc().player == null) return null;
+        ItemStack s = mc().player.getInventory().getStack(i);
+        return s.isEmpty() ? null : s;
+    }
+
+    @Override
     public Object mainHand() {
         ItemStack s = mc().player.getMainHandStack();
         return s.isEmpty() ? null : s;

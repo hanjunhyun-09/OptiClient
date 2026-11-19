@@ -2,6 +2,7 @@ package dev.opticlient.core;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -89,6 +90,10 @@ public final class HudEditor {
     private int maxScroll;
     private boolean closeRequested;
     private Module highlight;
+
+    // 카드 톱니로 연 개별 설정 창
+    private Card detail;
+    private final List<Row> detailRows = new ArrayList<Row>();
 
     // HUD 편집 드래그
     private Module dragging;
@@ -181,29 +186,11 @@ public final class HudEditor {
             public boolean get() { return OptiCore.config.shadow; }
             public void set(boolean v) { OptiCore.config.shadow = v; }
         }));
-        rows.add(new Row("줌 배율") {
-            String value() { return (int) OptiCore.config.zoomFactor + "x"; }
-            void run() {
-                double z = OptiCore.config.zoomFactor;
-                OptiCore.config.zoomFactor = z >= 8 ? 2 : z * 2;
-            }
-        });
-        rows.add(new Row("크로스헤어 모양") {
-            String value() { return Crosshair.STYLES[Math.max(0, Math.min(3, OptiCore.config.crosshairStyle))]; }
-            void run() { OptiCore.config.crosshairStyle = (OptiCore.config.crosshairStyle + 1) % Crosshair.STYLES.length; }
-        });
-        rows.add(new Row("크로스헤어 색") {
-            String value() { return Crosshair.COLORS[Math.max(0, Math.min(4, OptiCore.config.crosshairColor))]; }
-            void run() { OptiCore.config.crosshairColor = (OptiCore.config.crosshairColor + 1) % Crosshair.COLORS.length; }
-        });
-        rows.add(new Row("크로스헤어 크기") {
-            String value() { return Crosshair.SIZES[Math.max(0, Math.min(2, OptiCore.config.crosshairSize))]; }
-            void run() { OptiCore.config.crosshairSize = (OptiCore.config.crosshairSize + 1) % Crosshair.SIZES.length; }
-        });
-        rows.add(new Row("퍼스펙티브 키") {
-            String value() { return OptiCore.config.freelookToggle ? "토글" : "누르는 동안"; }
-            void run() { OptiCore.config.freelookToggle = !OptiCore.config.freelookToggle; }
-        });
+        rows.add(rowZoom());
+        rows.add(rowCrossStyle());
+        rows.add(rowCrossColor());
+        rows.add(rowCrossSize());
+        rows.add(rowFreelookKey());
         rows.add(toggleRow("FPS 제한 해제 (항상)", new Flag() {
             public boolean get() { return OptiCore.config.unlockFps; }
             public void set(boolean v) { OptiCore.config.unlockFps = v; }
@@ -212,17 +199,138 @@ public final class HudEditor {
             public boolean get() { return OptiCore.config.customTitle; }
             public void set(boolean v) { OptiCore.config.customTitle = v; }
         }));
-        rows.add(new Row("부스트 렌더 거리") {
+        rows.add(rowBoostDistance());
+        rows.add(new Row("HUD 위치 초기화") {
+            int labelColor() { return 0xFFFF7A7A; }
+            void run() { OptiCore.resetPositions(); }
+        });
+    }
+
+    private static Module moduleOf(Card c) {
+        for (Module m : OptiCore.MODULES) if (m.id.equals(c.id)) return m;
+        return null;
+    }
+
+    private static final String[] MODE_NAMES = {"전체 설정 따름", "켬", "끔"};
+
+    /** 톱니를 누른 카드의 개별 설정 */
+    private void openDetail(Card card) {
+        detail = card;
+        detailRows.clear();
+        detailRows.add(toggleRow("켜기", card.flag));
+        final Module m = moduleOf(card);
+        if (m != null) {
+            final HudConfig.ModuleState s = OptiCore.state(m);
+            detailRows.add(new Row("크기") {
+                String value() { return Math.round(OptiCore.scaleOf(s) * 100) + "%"; }
+                void run() {
+                    float v = Math.round((OptiCore.scaleOf(s) + 0.1f) * 10f) / 10f;
+                    s.scale = v > 2f ? 0.5f : v;
+                }
+            });
+            detailRows.add(new Row("배경") {
+                String value() { return MODE_NAMES[Math.max(0, Math.min(2, s.bg))]; }
+                void run() { s.bg = (s.bg + 1) % 3; }
+            });
+            detailRows.add(new Row("글자 그림자") {
+                String value() { return MODE_NAMES[Math.max(0, Math.min(2, s.shadowMode))]; }
+                void run() { s.shadowMode = (s.shadowMode + 1) % 3; }
+            });
+            detailRows.add(new Row("글자색") {
+                String value() { return Theme.TEXT_COLOR_NAMES[Math.max(0, Math.min(Theme.TEXT_COLOR_NAMES.length - 1, s.color))]; }
+                void run() { s.color = (s.color + 1) % Theme.TEXT_COLOR_NAMES.length; }
+            });
+            if (m.hasLabel()) {
+                detailRows.add(toggleRow("이름 표시 (예: FPS)", new Flag() {
+                    public boolean get() { return s.label; }
+                    public void set(boolean v) { s.label = v; }
+                }));
+            }
+            for (final Module.Option o : m.options()) {
+                detailRows.add(toggleRow(o.label, new Flag() {
+                    public boolean get() { return m.opt(o.key); }
+                    public void set(boolean v) {
+                        if (s.opts == null) s.opts = new java.util.LinkedHashMap<String, Boolean>();
+                        s.opts.put(o.key, v);
+                    }
+                }));
+            }
+            detailRows.add(new Row("HUD 편집에서 위치 옮기기") {
+                void run() {
+                    s.enabled = true;
+                    tab = TAB_EDIT;
+                    highlight = m;
+                    selected = m;
+                    detail = null;
+                }
+            });
+            detailRows.add(new Row("이 HUD 위치 초기화") {
+                int labelColor() { return 0xFFFF7A7A; }
+                void run() {
+                    s.x = m.defX;
+                    s.y = m.defY;
+                    s.anchor = null;
+                }
+            });
+            return;
+        }
+        // 기능 카드: 그 기능에 붙은 설정
+        if (card.id.equals("boost")) detailRows.add(rowBoostDistance());
+        if (card.id.equals("zoom")) detailRows.add(rowZoom());
+        if (card.id.equals("crosshair")) {
+            detailRows.add(rowCrossStyle());
+            detailRows.add(rowCrossColor());
+            detailRows.add(rowCrossSize());
+        }
+        if (card.id.equals("freelook")) detailRows.add(rowFreelookKey());
+    }
+
+    private static Row rowZoom() {
+        return new Row("줌 배율") {
+            String value() { return (int) OptiCore.config.zoomFactor + "x"; }
+            void run() {
+                double z = OptiCore.config.zoomFactor;
+                OptiCore.config.zoomFactor = z >= 8 ? 2 : z * 2;
+            }
+        };
+    }
+
+    private static Row rowCrossStyle() {
+        return new Row("크로스헤어 모양") {
+            String value() { return Crosshair.STYLES[Math.max(0, Math.min(3, OptiCore.config.crosshairStyle))]; }
+            void run() { OptiCore.config.crosshairStyle = (OptiCore.config.crosshairStyle + 1) % Crosshair.STYLES.length; }
+        };
+    }
+
+    private static Row rowCrossColor() {
+        return new Row("크로스헤어 색") {
+            String value() { return Crosshair.COLORS[Math.max(0, Math.min(4, OptiCore.config.crosshairColor))]; }
+            void run() { OptiCore.config.crosshairColor = (OptiCore.config.crosshairColor + 1) % Crosshair.COLORS.length; }
+        };
+    }
+
+    private static Row rowCrossSize() {
+        return new Row("크로스헤어 크기") {
+            String value() { return Crosshair.SIZES[Math.max(0, Math.min(2, OptiCore.config.crosshairSize))]; }
+            void run() { OptiCore.config.crosshairSize = (OptiCore.config.crosshairSize + 1) % Crosshair.SIZES.length; }
+        };
+    }
+
+    private static Row rowFreelookKey() {
+        return new Row("퍼스펙티브 키") {
+            String value() { return OptiCore.config.freelookToggle ? "토글" : "누르는 동안"; }
+            void run() { OptiCore.config.freelookToggle = !OptiCore.config.freelookToggle; }
+        };
+    }
+
+    private static Row rowBoostDistance() {
+        return new Row("부스트 렌더 거리") {
             String value() { return OptiCore.config.boostRenderDistance + "청크"; }
             void run() {
                 int d = OptiCore.config.boostRenderDistance;
                 OptiCore.config.boostRenderDistance = d >= 12 ? 2 : d + 2;
             }
-        });
-        rows.add(new Row("HUD 위치 초기화") {
-            int labelColor() { return 0xFFFF7A7A; }
-            void run() { OptiCore.resetPositions(); }
-        });
+        };
     }
 
     private static Row toggleRow(String label, final Flag f) {
@@ -248,8 +356,16 @@ public final class HudEditor {
         renderTopBar(r, mx, my);
         int[] p = panelRect();
         Theme.round(r, p[0], p[1], p[2], p[3], Theme.MENU_BG, 4);
-        if (tab == TAB_MODS) renderMods(r, mx, my, p);
-        else renderSettings(r, mx, my, p);
+        if (tab == TAB_MODS) {
+            // 설정 창이 열려 있으면 뒤 카드에는 마우스가 안 닿은 것처럼
+            renderMods(r, detail != null ? -1 : mx, detail != null ? -1 : my, p);
+            if (detail != null) {
+                r.nextLayer();
+                renderDetail(r, mx, my);
+            }
+        } else {
+            renderSettings(r, mx, my, p);
+        }
         r.flush();
     }
 
@@ -486,27 +602,72 @@ public final class HudEditor {
     private void renderSettings(HudRenderer r, int mx, int my, int[] p) {
         r.text("설정", p[0] + 10, p[1] + 10, Theme.WHITE, false);
         r.fill(p[0] + 10, p[1] + 20, p[0] + 10 + r.width("설정"), p[1] + 21, Theme.accent(p[0], p[1]));
-        for (int i = 0; i < rows.size(); i++) {
-            Row row = rows.get(i);
-            int[] b = rowRect(p, i);
-            Theme.round(r, b[0], b[1], b[2], b[3], inside(mx, my, b) ? Theme.CARD_HOVER : Theme.CARD_BG, 3);
-            r.text(row.label, b[0] + 7, b[1] + 4, row.labelColor(), false);
-            Boolean on = row.on();
-            if (on != null) {
-                int tx = b[2] - 24, ty = b[1] + 4;
-                Theme.round(r, tx, ty, tx + 18, ty + 8, on ? Theme.accent(tx, ty) : Theme.OFF_BG, 4);
-                int kx = on ? tx + 11 : tx + 1;
-                Theme.round(r, kx, ty + 1, kx + 6, ty + 7, Theme.WHITE, 2);
-            } else if (row.value() != null) {
-                String v = row.value();
-                int vw = r.width(v) + 12;
-                int vx = b[2] - 6 - vw;
-                Theme.round(r, vx, b[1] + 2, vx + vw, b[3] - 2, Theme.CHIP_BG, 3);
-                if (row.label.equals("강조색")) Theme.round(r, vx - 9, b[1] + 5, vx - 3, b[1] + 11, Theme.accent(vx, b[1]), 2);
-                r.text(v, vx + 6, b[1] + 4, Theme.accent(vx, b[1]), false);
-            }
-        }
+        for (int i = 0; i < rows.size(); i++) drawRow(r, rows.get(i), rowRect(p, i), mx, my);
         r.text("메뉴 RShift (1.8.9 RCtrl) · C 줌 · V 달리기 · G 웅크리기 · Alt 퍼스펙티브", p[0] + 10, p[3] - 14, Theme.DIM, false);
+    }
+
+    private void drawRow(HudRenderer r, Row row, int[] b, int mx, int my) {
+        Theme.round(r, b[0], b[1], b[2], b[3], inside(mx, my, b) ? Theme.CARD_HOVER : Theme.CARD_BG, 3);
+        r.text(row.label, b[0] + 7, b[1] + 4, row.labelColor(), false);
+        Boolean on = row.on();
+        if (on != null) {
+            int tx = b[2] - 24, ty = b[1] + 4;
+            Theme.round(r, tx, ty, tx + 18, ty + 8, on ? Theme.accent(tx, ty) : Theme.OFF_BG, 4);
+            int kx = on ? tx + 11 : tx + 1;
+            Theme.round(r, kx, ty + 1, kx + 6, ty + 7, Theme.WHITE, 2);
+        } else if (row.value() != null) {
+            String v = row.value();
+            int vw = r.width(v) + 12;
+            int vx = b[2] - 6 - vw;
+            Theme.round(r, vx, b[1] + 2, vx + vw, b[3] - 2, Theme.CHIP_BG, 3);
+            if (row.label.equals("강조색")) Theme.round(r, vx - 9, b[1] + 5, vx - 3, b[1] + 11, Theme.accent(vx, b[1]), 2);
+            if (row.label.equals("글자색")) {
+                int idx = Arrays.asList(Theme.TEXT_COLOR_NAMES).indexOf(v);
+                Theme.round(r, vx - 9, b[1] + 5, vx - 3, b[1] + 11, Theme.textColor(idx), 2);
+            }
+            r.text(v, vx + 6, b[1] + 4, Theme.accent(vx, b[1]), false);
+        } else {
+            r.text(">", b[2] - 12, b[1] + 4, Theme.MUTED, false);
+        }
+    }
+
+    // ---------- 개별 설정 창 ----------
+
+    private static final int DROW_H = 18;
+
+    /** 개별 설정 창 {x1, y1, x2, y2} */
+    private int[] detailRect() {
+        int[] p = panelRect();
+        int w = Math.min(280, p[2] - p[0] - 20);
+        int h = 30 + detailRows.size() * DROW_H + 28;
+        int x = (p[0] + p[2] - w) / 2;
+        int y = Math.max(p[1] + 6, (p[1] + p[3] - h) / 2);
+        return new int[]{x, y, x + w, y + h};
+    }
+
+    private int[] detailRowRect(int[] d, int i) {
+        int y = d[1] + 26 + i * DROW_H;
+        return new int[]{d[0] + 8, y, d[2] - 8, y + DROW_H - 2};
+    }
+
+    private int[] detailClose(int[] d) {
+        return new int[]{d[2] - 58, d[3] - 22, d[2] - 8, d[3] - 6};
+    }
+
+    private void renderDetail(HudRenderer r, int mx, int my) {
+        int[] p = panelRect();
+        r.fill(p[0], p[1], p[2], p[3], 0x90000000);
+        int[] d = detailRect();
+        Theme.round(r, d[0], d[1], d[2], d[3], Theme.MENU_BG, 5);
+        Theme.roundOutline(r, d[0], d[1], d[2], d[3], Theme.withAlpha(Theme.accent(), 0x90), 5);
+        Icons.draw(r, detail.icon, d[0] + 9, d[1] + 8, 1, Theme.accent(d[0], d[1]));
+        r.text(detail.name + " 설정", d[0] + 24, d[1] + 9, Theme.WHITE, false);
+        r.text(detail.desc, d[0] + 24 + r.width(detail.name + " 설정") + 8, d[1] + 9, Theme.MUTED, false);
+        for (int i = 0; i < detailRows.size(); i++) drawRow(r, detailRows.get(i), detailRowRect(d, i), mx, my);
+        if (detailRows.size() == 1) r.text("켜고 끄는 것 말고는 따로 설정할 게 없어요", d[0] + 10, d[1] + 30 + DROW_H, Theme.MUTED, false);
+        int[] c = detailClose(d);
+        Theme.round(r, c[0], c[1], c[2], c[3], Theme.accent(c[0], c[1]), 3);
+        r.centered("닫기", (c[0] + c[2]) / 2, c[1] + 4, Theme.WHITE, false);
     }
 
     // ---------- HUD 편집 ----------
@@ -564,6 +725,12 @@ public final class HudEditor {
         }
 
         r.nextLayer();
+        if (dragging != null) {
+            r.fill(sw / 2, 0, sw / 2 + 1, sh, 0x22FFFFFF);
+            r.fill(0, sh / 2, sw, sh / 2 + 1, 0x22FFFFFF);
+        }
+        Module active = dragging != null ? dragging : selected;
+        if (active != null && OptiCore.state(active).enabled) renderGuides(r, active);
         // 마우스를 올린 요소: 모서리 × (바로 삭제)
         if (hovered != null && dragging == null) {
             int[] p = OptiCore.resolve(hovered, OptiCore.state(hovered), sw, sh);
@@ -596,8 +763,95 @@ public final class HudEditor {
         int[] reset = editButton(bar, 1);
         Theme.round(r, reset[0], reset[1], reset[2], reset[3], inside(mx, my, reset) ? Theme.CHIP_HOVER : Theme.CHIP_BG, 3);
         r.centered("초기화", (reset[0] + reset[2]) / 2, reset[1] + 4, Theme.TEXT, false);
-        r.centered("클릭: 선택 · 휠: 크기 · 오른쪽 클릭 / × : 삭제", sw / 2, sh - 12, 0xFFBBBBBB, true);
+        r.centered("클릭: 선택 · 휠: 크기 · 오른쪽 클릭 / × : 삭제 · 같은 줄·가운데에 오면 선이 보이고 붙어요", sw / 2, sh - 12, 0xFFBBBBBB, true);
         r.flush();
+    }
+
+    // ---------- 정렬 안내선 ----------
+
+    /** 끌어당기는 거리 (이 안이면 같은 줄로 붙임) */
+    private static final int SNAP = 4;
+    /** 지금 보여 줄 안내선: {0 세로 / 1 가로, 위치, 1 = 화면 가운데} */
+    private final List<int[]> guides = new ArrayList<int[]>();
+
+    /**
+     * m 을 (x, y) 에 둘 때 다른 HUD 의 왼쪽·가운데·오른쪽(위·가운데·아래) 또는 화면 가운데와 맞는지 본다.
+     * snap 이면 SNAP 안쪽은 그 줄로 끌어당긴다. 맞춘 위치를 돌려주고 guides 를 채운다.
+     */
+    private int[] align(Module m, int x, int y, boolean snap) {
+        int w = Math.max(1, m.boxW), h = Math.max(1, m.boxH);
+        // 맞출 대상: {위치, 종류(0 가장자리 / 1 가운데), 화면 가운데면 1}
+        List<int[]> vx = new ArrayList<int[]>();
+        List<int[]> hy = new ArrayList<int[]>();
+        vx.add(new int[]{sw / 2, 1, 1});
+        hy.add(new int[]{sh / 2, 1, 1});
+        for (Module o : OptiCore.MODULES) {
+            HudConfig.ModuleState os = OptiCore.state(o);
+            if (o == m || !os.enabled || o.boxW <= 0 || o.boxH <= 0) continue;
+            int[] q = OptiCore.resolve(o, os, sw, sh);
+            vx.add(new int[]{q[0], 0, 0});
+            vx.add(new int[]{q[0] + o.boxW, 0, 0});
+            vx.add(new int[]{q[0] + o.boxW / 2, 1, 0});
+            hy.add(new int[]{q[1], 0, 0});
+            hy.add(new int[]{q[1] + o.boxH, 0, 0});
+            hy.add(new int[]{q[1] + o.boxH / 2, 1, 0});
+        }
+        if (snap) {
+            x += bestShift(vx, x, w);
+            y += bestShift(hy, y, h);
+            x = Math.max(0, Math.min(x, sw - w));
+            y = Math.max(0, Math.min(y, sh - h));
+        }
+        guides.clear();
+        collect(vx, x, w, 0);
+        collect(hy, y, h, 1);
+        return new int[]{x, y};
+    }
+
+    /** 가장자리는 가장자리끼리, 가운데는 가운데끼리 비교해서 가장 가까운(SNAP 이내) 만큼 옮길 값 */
+    private static int bestShift(List<int[]> targets, int pos, int size) {
+        int best = SNAP + 1;
+        int shift = 0;
+        for (int[] t : targets) {
+            int[] mine = t[1] == 1 ? new int[]{pos + size / 2} : new int[]{pos, pos + size};
+            for (int v : mine) {
+                int d = t[0] - v;
+                if (Math.abs(d) < Math.abs(best)) {
+                    best = d;
+                    shift = d;
+                }
+            }
+        }
+        return Math.abs(best) <= SNAP ? shift : 0;
+    }
+
+    private void collect(List<int[]> targets, int pos, int size, int axis) {
+        for (int[] t : targets) {
+            int[] mine = t[1] == 1 ? new int[]{pos + size / 2} : new int[]{pos, pos + size};
+            for (int v : mine) {
+                if (Math.abs(t[0] - v) > 1) continue;
+                boolean dup = false;
+                for (int[] g : guides) if (g[0] == axis && g[1] == t[0]) dup = true;
+                if (!dup) guides.add(new int[]{axis, t[0], t[2]});
+            }
+        }
+    }
+
+    private void renderGuides(HudRenderer r, Module active) {
+        HudConfig.ModuleState s = OptiCore.state(active);
+        int[] p = OptiCore.resolve(active, s, sw, sh);
+        align(active, p[0], p[1], false);
+        int accent = Theme.accent();
+        for (int[] g : guides) {
+            int c = g[2] == 1 ? 0xE07CC8FF : Theme.withAlpha(accent, 0xE0);
+            if (g[0] == 0) {
+                r.fill(g[1], 0, g[1] + 1, sh, c);
+                if (g[2] == 1) r.text("가운데", g[1] + 3, 30, c, true);
+            } else {
+                r.fill(0, g[1], sw, g[1] + 1, c);
+                if (g[2] == 1) r.text("가운데", 4, g[1] + 3, c, true);
+            }
+        }
     }
 
     private void changeScale(Module m, float delta) {
@@ -631,6 +885,13 @@ public final class HudEditor {
     /** 자동 테스트용: 탭 바꾸기 (0 모드 메뉴, 1 HUD 편집, 2 설정) */
     public void selectTab(int t) {
         tab = t;
+        detail = null;
+    }
+
+    /** 자동 테스트용: 모드 메뉴에서 카드의 개별 설정 창 열기 */
+    public void openDetailForTest(String id) {
+        tab = TAB_MODS;
+        for (Card c : cards) if (c.id.equals(id)) openDetail(c);
     }
 
     /** 자동 테스트용: HUD 편집에서 요소를 고르고 크기를 바꾼다 */
@@ -666,12 +927,28 @@ public final class HudEditor {
         for (int i = 0; i < TAB_NAMES.length; i++) {
             if (inside(mx, my, tabRect(i))) {
                 tab = i;
+                detail = null;
                 highlight = null;
                 searchFocused = false;
                 return;
             }
         }
         int[] p = panelRect();
+        if (tab == TAB_MODS && detail != null) {
+            int[] d = detailRect();
+            if (!inside(mx, my, d) || inside(mx, my, detailClose(d))) {
+                detail = null;
+                return;
+            }
+            for (int i = 0; i < detailRows.size(); i++) {
+                if (inside(mx, my, detailRowRect(d, i))) {
+                    detailRows.get(i).run();
+                    OptiCore.save();
+                    return;
+                }
+            }
+            return;
+        }
         if (tab == TAB_SETTINGS) {
             for (int i = 0; i < rows.size(); i++) {
                 if (inside(mx, my, rowRect(p, i))) {
@@ -707,10 +984,7 @@ public final class HudEditor {
             if (inside(mx, my, cardHeart(c))) {
                 if (!OptiCore.config.favorites.remove(card.id)) OptiCore.config.favorites.add(card.id);
             } else if (inside(mx, my, cardGear(c))) {
-                tab = card.gearTab;
-                highlight = null;
-                for (Module m : OptiCore.MODULES) if (m.id.equals(card.id)) highlight = m;
-                if (highlight != null) OptiCore.state(highlight).enabled = true;
+                openDetail(card); // 이 모드만의 설정 창
             } else {
                 card.flag.set(!card.flag.get()); // 카드 어디를 눌러도 켜고 끈다
             }
@@ -770,8 +1044,11 @@ public final class HudEditor {
         if (tab != TAB_EDIT || dragging == null) return;
         HudConfig.ModuleState s = OptiCore.state(dragging);
         s.anchor = null; // 직접 옮기면 절대 좌표로
-        s.x = Math.max(0, Math.min(mx - dragOffX, sw - dragging.boxW));
-        s.y = Math.max(0, Math.min(my - dragOffY, sh - dragging.boxH));
+        int nx = Math.max(0, Math.min(mx - dragOffX, sw - dragging.boxW));
+        int ny = Math.max(0, Math.min(my - dragOffY, sh - dragging.boxH));
+        int[] a = align(dragging, nx, ny, true); // 다른 HUD·화면 가운데와 같은 줄이면 붙인다
+        s.x = a[0];
+        s.y = a[1];
     }
 
     public void mouseReleased() {
@@ -789,7 +1066,7 @@ public final class HudEditor {
             }
             return;
         }
-        if (tab != TAB_MODS) return;
+        if (tab != TAB_MODS || detail != null) return;
         scroll -= (int) Math.round(amount * 24);
         scroll = Math.max(0, Math.min(scroll, maxScroll));
     }
@@ -813,6 +1090,10 @@ public final class HudEditor {
     public boolean escape() {
         if (searchFocused) {
             searchFocused = false;
+            return false;
+        }
+        if (detail != null) {
+            detail = null;
             return false;
         }
         if (tab == TAB_EDIT) {

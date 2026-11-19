@@ -36,6 +36,7 @@ public final class Modules {
         list.add(new Hunger());
         list.add(new Memory());
         list.add(new Server());
+        list.add(new Inventory());
         return list;
     }
 
@@ -59,7 +60,12 @@ public final class Modules {
 
         @Override
         protected List<String> lines(GameInfo g) {
-            return Collections.singletonList("CPS: " + OptiCore.CPS.left() + " | " + OptiCore.CPS.right());
+            return Collections.singletonList("CPS: " + OptiCore.CPS.left() + (opt("rmb") ? " | " + OptiCore.CPS.right() : ""));
+        }
+
+        @Override
+        public List<Option> options() {
+            return Collections.singletonList(new Option("rmb", "오른쪽 클릭 CPS 표시", true));
         }
     }
 
@@ -88,10 +94,16 @@ public final class Modules {
         protected List<String> lines(GameInfo g) {
             float yaw = ((g.yaw() % 360f) + 360f) % 360f;
             int dir = (int) Math.floor(yaw / 90f + 0.5f) & 3;
-            return Arrays.asList(
-                    String.format(Locale.ROOT, "XYZ: %.1f / %.0f / %.1f", g.x(), Math.floor(g.y()), g.z()),
-                    "방향: " + DIRS[dir],
-                    "바이옴: " + g.biome());
+            List<String> out = new ArrayList<String>();
+            out.add(String.format(Locale.ROOT, "XYZ: %.1f / %.0f / %.1f", g.x(), Math.floor(g.y()), g.z()));
+            if (opt("dir")) out.add("방향: " + DIRS[dir]);
+            if (opt("biome")) out.add("바이옴: " + g.biome());
+            return out;
+        }
+
+        @Override
+        public List<Option> options() {
+            return Arrays.asList(new Option("dir", "방향 표시", true), new Option("biome", "바이옴 표시", true));
         }
     }
 
@@ -108,7 +120,9 @@ public final class Modules {
     }
 
     static final class Clock extends Module.TextModule {
-        private final SimpleDateFormat fmt = new SimpleDateFormat("HH:mm");
+        private final SimpleDateFormat hm = new SimpleDateFormat("HH:mm");
+        private final SimpleDateFormat hms = new SimpleDateFormat("HH:mm:ss");
+        private final SimpleDateFormat ampm = new SimpleDateFormat("a h:mm", Locale.KOREAN);
 
         Clock() {
             super("clock", "시계", false, AUTO, AUTO);
@@ -117,7 +131,13 @@ public final class Modules {
 
         @Override
         protected List<String> lines(GameInfo g) {
-            return Collections.singletonList("시간: " + fmt.format(new Date()));
+            SimpleDateFormat f = opt("ampm") ? ampm : opt("sec") ? hms : hm;
+            return Collections.singletonList("시간: " + f.format(new Date()));
+        }
+
+        @Override
+        public List<Option> options() {
+            return Arrays.asList(new Option("sec", "초까지 표시", false), new Option("ampm", "오전/오후로 표시", false));
         }
     }
 
@@ -170,7 +190,7 @@ public final class Modules {
 
         @Override
         public void render(HudRenderer r, GameInfo g, HudConfig cfg, int x, int y, boolean editing) {
-            Object[] all = {g.armor(0), g.armor(1), g.armor(2), g.armor(3), g.mainHand()};
+            Object[] all = {g.armor(0), g.armor(1), g.armor(2), g.armor(3), opt("held") ? g.mainHand() : null};
             java.util.List<Object> items = new java.util.ArrayList<Object>();
             for (Object it : all) if (it != null) items.add(it);
 
@@ -203,7 +223,7 @@ public final class Modules {
                 String text = label(g, it);
                 if (modern && max > 0) {
                     float ratio = (max - g.damage(it)) / (float) max;
-                    r.text(text, rx + 20, ry + 1, Theme.WHITE, cfg.shadow);
+                    r.text(text, rx + 20, ry + 1, cfg.textColor, cfg.shadow);
                     // 내구도 막대
                     r.fill(rx + 20, ry + 11, rx + 42, ry + 13, 0x50FFFFFF);
                     r.fill(rx + 20, ry + 11, rx + 20 + Math.max(1, Math.round(22 * ratio)), ry + 13, colorFor(ratio));
@@ -214,6 +234,11 @@ public final class Modules {
             }
             lastW = w;
             lastH = h;
+        }
+
+        @Override
+        public List<Option> options() {
+            return Collections.singletonList(new Option("held", "손에 든 아이템 표시", true));
         }
 
         private static String label(GameInfo g, Object it) {
@@ -264,15 +289,27 @@ public final class Modules {
             key(r, cfg, "S", press(g, GameInfo.Key.BACK, dt), x + B + GAP, y2, B, B);
             key(r, cfg, "D", press(g, GameInfo.Key.RIGHT, dt), x + (B + GAP) * 2, y2, B, B);
             int y3 = y2 + B + GAP;
-            int half = (full - GAP) / 2;
-            mouse(r, cfg, "LMB", OptiCore.CPS.left(), press(g, GameInfo.Key.ATTACK, dt), x, y3, half);
-            mouse(r, cfg, "RMB", OptiCore.CPS.right(), press(g, GameInfo.Key.USE, dt), x + half + GAP, y3, full - half - GAP);
-            int y4 = y3 + B + GAP;
-            float jump = press(g, GameInfo.Key.JUMP, dt);
-            Theme.key(r, x, y4, full, 10, jump);
-            r.fill(x + full / 2 - 12, y4 + 4, x + full / 2 + 12, y4 + 6, Theme.keyText(jump));
+            int bottom = y2 + B;
+            if (opt("mouse")) {
+                int half = (full - GAP) / 2;
+                mouse(r, cfg, "LMB", OptiCore.CPS.left(), press(g, GameInfo.Key.ATTACK, dt), x, y3, half);
+                mouse(r, cfg, "RMB", OptiCore.CPS.right(), press(g, GameInfo.Key.USE, dt), x + half + GAP, y3, full - half - GAP);
+                bottom = y3 + B;
+                y3 += B + GAP;
+            }
+            if (opt("space")) {
+                float jump = press(g, GameInfo.Key.JUMP, dt);
+                Theme.key(r, x, y3, full, 10, jump);
+                r.fill(x + full / 2 - 12, y3 + 4, x + full / 2 + 12, y3 + 6, Theme.keyText(jump));
+                bottom = y3 + 10;
+            }
             lastW = full;
-            lastH = y4 + 10 - y;
+            lastH = bottom - y;
+        }
+
+        @Override
+        public List<Option> options() {
+            return Arrays.asList(new Option("mouse", "마우스 버튼 (CPS) 표시", true), new Option("space", "스페이스 표시", true));
         }
 
         private static void key(HudRenderer r, HudConfig cfg, String s, float p, int x, int y, int w, int h) {
@@ -501,6 +538,50 @@ public final class Modules {
         protected List<String> lines(GameInfo g) {
             String s = g.server();
             return Collections.singletonList("서버: " + (s == null || s.length() == 0 ? "싱글플레이" : s));
+        }
+    }
+
+    /** 인벤토리 (가방 27칸, 선택하면 핫바 9칸까지) */
+    static final class Inventory extends Module {
+        private static final int SLOT = 18;
+
+        Inventory() {
+            super("inventory", "인벤토리", false, -6, -6); // -6 = 핫바 위 가운데
+            meta("PvP", "가방 속 아이템을 화면에 표시", Icons.BAG);
+        }
+
+        @Override
+        public List<Option> options() {
+            return Arrays.asList(new Option("hotbar", "핫바 줄도 표시", false), new Option("slots", "빈 칸 테두리 표시", true));
+        }
+
+        @Override
+        public void render(HudRenderer r, GameInfo g, HudConfig cfg, int x, int y, boolean editing) {
+            boolean hotbar = opt("hotbar");
+            boolean slots = opt("slots");
+            int rows = hotbar ? 4 : 3;
+            int pad = cfg.background && !Theme.minimal() ? 3 : 0;
+            int w = 9 * SLOT + pad * 2;
+            int h = rows * SLOT + (hotbar ? 3 : 0) + pad * 2;
+            Theme.panel(r, x, y, w, h);
+            for (int row = 0; row < rows; row++) {
+                int ry = y + pad + row * SLOT + (row == 3 ? 3 : 0);
+                for (int col = 0; col < 9; col++) {
+                    int rx = x + pad + col * SLOT;
+                    if (slots) r.fill(rx + 1, ry + 1, rx + SLOT - 1, ry + SLOT - 1, 0x30FFFFFF);
+                }
+            }
+            // 아이템은 칸을 다 그린 뒤 (배경과 섞여 그려지지 않게)
+            for (int row = 0; row < rows; row++) {
+                int base = row < 3 ? 9 + row * 9 : 0; // 가방 9~35, 핫바 0~8
+                int ry = y + pad + row * SLOT + (row == 3 ? 3 : 0);
+                for (int col = 0; col < 9; col++) {
+                    Object it = g.slot(base + col);
+                    if (it != null) r.item(it, x + pad + col * SLOT + 1, ry + 1);
+                }
+            }
+            lastW = w;
+            lastH = h;
         }
     }
 }

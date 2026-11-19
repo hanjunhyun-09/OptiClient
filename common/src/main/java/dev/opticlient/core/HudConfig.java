@@ -78,6 +78,18 @@ public class HudConfig {
          */
         public String anchor;
 
+        // ---------- 모듈마다 따로 정하는 설정 (메뉴 카드의 톱니) ----------
+        /** 배경: 0 = 전체 설정 따름, 1 = 켬, 2 = 끔 */
+        public int bg;
+        /** 글자 그림자: 0 = 전체 설정 따름, 1 = 켬, 2 = 끔 */
+        public int shadowMode;
+        /** 글자색 번호 (Theme.TEXT_COLORS, 0 = 흰색) */
+        public int color;
+        /** "FPS" 같은 이름 글자 표시 */
+        public boolean label = true;
+        /** 모듈마다 다른 켜고 끄는 옵션 (Module.options) */
+        public Map<String, Boolean> opts;
+
         public ModuleState() {
         }
 

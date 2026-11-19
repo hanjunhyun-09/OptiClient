@@ -251,6 +251,21 @@ final class DevAutoTest {
                 state = 12;
             }
             case 12 -> {
+                // 싱글플레이에서 나가면 OptiClient 타이틀 화면이 나와야 한다
+                mc.disconnectFromWorld(net.minecraft.network.chat.Component.literal("OptiClient test"));
+                wait = 100;
+                state = 14;
+            }
+            case 14 -> {
+                var sc = mc.gui.screen();
+                log("나가기 후 화면: " + (sc == null ? "없음" : sc.getClass().getSimpleName()));
+                mc.gui.setScreen(null); // 월드 없이 화면 닫기 → 게임이 타이틀 화면을 직접 만드는 경로
+                wait = 20;
+                state = 15;
+            }
+            case 15 -> {
+                var sc = mc.gui.screen();
+                log("화면 닫기 후 화면: " + (sc == null ? "없음" : sc.getClass().getSimpleName()));
                 mc.stop();
                 state = 13;
             }

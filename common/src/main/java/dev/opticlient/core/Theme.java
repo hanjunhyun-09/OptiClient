@@ -16,6 +16,16 @@ public final class Theme {
     public static final int RAINBOW = 6;
 
     public static final int WHITE = 0xFFFFFFFF;
+    /** 모듈별 글자색 (0 = 흰색, 1 = 강조색 은 그릴 때 정함) */
+    public static final String[] TEXT_COLOR_NAMES = {"흰색", "강조색", "초록", "노랑", "하늘", "분홍", "회색"};
+    private static final int[] TEXT_COLORS = {0xFFFFFFFF, 0, 0xFF6EE7A0, 0xFFFFD166, 0xFF7CC8FF, 0xFFFF8FB8, 0xFFB8BCC8};
+    /** 지금 그리는 모듈이 이름 글자를 숨기는지 (OptiCore.renderModule 이 정함) */
+    static boolean hideLabel;
+
+    public static int textColor(int idx) {
+        if (idx <= 0 || idx >= TEXT_COLORS.length) return WHITE;
+        return idx == 1 ? accent() : TEXT_COLORS[idx];
+    }
     public static final int TEXT = 0xFFEDEEF2;
     public static final int MUTED = 0xFF8E929E;
     public static final int DIM = 0xFF5D616C;
